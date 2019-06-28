@@ -1,4 +1,4 @@
 # CHIP8 Emulator
-# Author: Cindy Pham
+## Author: Cindy Pham
 
 Creates a CHIP8 emulator in C/C++
