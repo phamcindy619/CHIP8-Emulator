@@ -5,6 +5,7 @@ using namespace std;
 
 int main()
 {
-    cout << "Hello\n";
+    Chip8 myChip;
+    myChip.initialize();
     return 0;
 }

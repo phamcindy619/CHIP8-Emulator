@@ -1,5 +1,6 @@
 #include "chip8.h"
 #include <fstream>
+#include <iostream>
 
 using namespace std;
 
@@ -25,6 +26,8 @@ unsigned char chip8_fontset[80] =
 
 void Chip8::initialize()
 {
+    cout << "Initializing...";
+
     pc = 0x200;     // App will be loaded at 0x200
     opcode = 0;     // Reset opcode
     I = 0;          // Reset index register
@@ -53,6 +56,8 @@ void Chip8::initialize()
     // Reset timers
     delay_timer = 0;
     sound_timer = 0;
+
+    cout << "Done\n";
 }
 
 bool Chip8::loadApplication(const char* fileName)
