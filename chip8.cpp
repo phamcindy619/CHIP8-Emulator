@@ -194,13 +194,59 @@ void Chip8::decode()
         case 0xE000:
             switch (opcode & 0xFF)
             {
-
+                // EX9E: If key stored in V[X] is pressed, skip next instruction
+                case 0x9E:
+                    if (key[V[(opcode & 0xF00) >> 8]] == 1)
+                        pc += 2;
+                    pc += 2;
+                    break;
+                // EXA1: If key stored in V[X] is not pressed, skip next instruction
+                case 0xA1:
+                    if (key[V[(opcode & 0xF00) >> 8] == 0]
+                            pc += 2;
+                    pc += 2;
+                    break;
+                default:
+                    printf("Unknown opcode: 0x%X\n", opcode);
             }
             break;
         case 0xF000:
             switch (opcode & 0xFF)
             {
-
+                // FX07: Set V[X] to delay timer value
+                case 0x07:
+                    V[(opcode & 0xF00) >> 8] = delay_timer;
+                    pc += 2;
+                    break;
+                // FX0A: Wait for key press and then store in V[X]
+                case 0x0A:
+                    break;
+                // FX15: Set delay timer to V[X]
+                case 0x15:
+                    delay_timer = V[(opcode & 0xF00) >> 8];
+                    pc += 2;
+                    break;
+                // FX18: Set sound timer to V[X]
+                case 0x18:
+                    sound_timer = V[(opcode & 0xF00) >> 8];
+                    pc += 2;
+                    break;
+                // FX1E: Add V[X] to I
+                case 0x1E:
+                    I += V[(opcode & 0xF00) >> 8];
+                    pc += 2;
+                    break;
+                // FX29: Set I to location of sprite for character in V[X]
+                case 0x29:
+                    break;
+                case 0x33:
+                    break;
+                case 0x55:
+                    break;
+                case 0x65:
+                    break;
+                default:
+                    printf("Unknown opcode: 0x%X\n", opcode);
             }
             break;
         default:
