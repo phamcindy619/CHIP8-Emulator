@@ -25,6 +25,11 @@ class Chip8
         unsigned short sp;                      // Stack pointer
         unsigned char key[NUM_OF_KEYS];         // HEX-based keypad
 
+        // Helper methods
+        void fetch();
+        void decode();
+        void execute();
+
     public:
         void initialize();
         void emulateCycle();
