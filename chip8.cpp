@@ -62,6 +62,7 @@ void Chip8::initialize()
     sound_timer = 0;
 
     srand(time(NULL));
+    drawFlag = true;
 
     printf("Done.\n");
 }
@@ -173,7 +174,7 @@ void Chip8::decode()
             break;
         // 3XNN: If V[X] == NN, skip next instruction
         case 0x3000:
-            if (V[(opcode & 0xF00) >> 8] == 0xFF)
+            if (V[(opcode & 0xF00) >> 8] == (opcode & 0xFF))
                 pc += 2;
             pc += 2;
             break;
@@ -209,17 +210,17 @@ void Chip8::decode()
                     break;
                 // 8XY1: Set V[X] to V[X] OR V[Y]
                 case 0x1:
-                    V[(opcode & 0xF00) >> 8] = V[(opcode & 0xF00) >> 8] | V[(opcode & 0xF0) >> 4];
+                    V[(opcode & 0xF00) >> 8] |= V[(opcode & 0xF0) >> 4];
                     pc += 2;
                     break;
                 // 8XY2: Set V[X] to V[X] AND V[Y]
                 case 0x2:
-                    V[(opcode & 0xF00) >> 8] = V[(opcode & 0xF00) >> 8] & V[(opcode & 0xF0) >> 4];
+                    V[(opcode & 0xF00) >> 8] &= V[(opcode & 0xF0) >> 4];
                     pc += 2;
                     break;
                 // 8XY3: Set V[X] to V[X] XOR V[Y]
                 case 0x3:
-                    V[(opcode & 0xF00) >> 8] = V[(opcode & 0xF00) >> 8] ^ V[(opcode & 0xF0) >> 4];
+                    V[(opcode & 0xF00) >> 8] ^= V[(opcode & 0xF0) >> 4];
                     pc += 2;
                     break;
                 // 8XY4: Add V[Y] to V[X] and set carry flag, if any
@@ -235,10 +236,10 @@ void Chip8::decode()
                 // 8XY5: Subtract V[Y] from V[X] and set borrow flag, if any
                 case 0x5:
                     // Set borrow flag
-                    if (V[(opcode & 0xF00) >> 8] > V[(opcode & 0xF0) >> 4])
-                        V[0xF] = 1;
-                    else
+                    if (V[(opcode & 0xF00) >> 8] < V[(opcode & 0xF0) >> 4])
                         V[0xF] = 0;
+                    else
+                        V[0xF] = 1;
                     V[(opcode & 0xF00) >> 8] -= V[(opcode & 0xF0) >> 4];
                     pc += 2;
                     break;
@@ -259,7 +260,7 @@ void Chip8::decode()
                     break;
                 // 8XYE: Set MSB of V[X] to V[F] and shift V[X] to left by 1
                 case 0xE:
-                    V[0xF] = (V[(opcode & 0xF00) >> 8] >> 7) & 0x1;
+                    V[0xF] = V[(opcode & 0xF00) >> 8] >> 7;
                     V[(opcode & 0xF00) >> 8] <<= 1;
                     pc += 2;
                     break;
@@ -275,16 +276,16 @@ void Chip8::decode()
             break;
         // ANNN: Sets I to address NNN
         case 0xA000:
-            I = opcode & 0x0FFF;
+            I = opcode & 0xFFF;
             pc += 2;
             break;
         // BNNN: Goto address NNN + V0
         case 0xB000:
-            pc = (opcode & 0x0FFF) + V[0];
+            pc = (opcode & 0xFFF) + V[0];
             break;
         // CXNN: Set V[X] to random number AND NN
         case 0xC000:
-            V[(opcode & 0xF00) >> 8] = (rand() % 256) & (opcode & 0xFF);
+            V[(opcode & 0xF00) >> 8] = (rand() % 0xFF) & (opcode & 0xFF);
             pc += 2;
             break;
         // DXYN: Draw sprite at (V[X], V[Y]) with width of 8 px and height of N px
@@ -318,7 +319,7 @@ void Chip8::decode()
             {
                 // EX9E: If key stored in V[X] is pressed, skip next instruction
                 case 0x9E:
-                    if (key[V[(opcode & 0xF00) >> 8]] != 1)
+                    if (key[V[(opcode & 0xF00) >> 8]] == 1)
                         pc += 2;
                     pc += 2;
                     break;
@@ -347,7 +348,7 @@ void Chip8::decode()
                     for (int i = 0; i < 16; i++)
                     {
                         // Key is pressed
-                        if (key[i] != 0)
+                        if (key[i] == 1)
                         {
                             V[(opcode & 0xF00) >> 8] = i;
                             key_pressed = true;
@@ -395,12 +396,14 @@ void Chip8::decode()
                 case 0x55:
                     for (int i = 0; i <= ((opcode & 0xF00) >> 8); i++)
                         memory[I + i] = V[i];
+                    I += ((opcode & 0xF00) >> 8) + 1;
                     pc += 2;
                     break;
                 // FX65: Fill V[0] to V[X] with values starting from address I (unmodified)
                 case 0x65:
                     for (int i = 0; i <= ((opcode & 0xF00) >> 8); i++)
                         V[i] = memory[I + i];
+                    I += ((opcode & 0xF00) >> 8) + 1;
                     pc += 2;
                     break;
                 default:
