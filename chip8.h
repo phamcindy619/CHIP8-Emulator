@@ -28,7 +28,6 @@ class Chip8
         // Helper methods
         void fetch();
         void decode();
-        void execute();
 
     public:
         void initialize();

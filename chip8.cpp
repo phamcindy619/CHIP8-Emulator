@@ -76,12 +76,28 @@ void Chip8::fetch()
     opcode = (memory[pc] << 8) | memory[pc + 1];
 }
 
-// Decode the instruction
+// Decode/Execute the instruction
 void Chip8::decode()
 {
     switch (opcode & 0xF000)
     {
         case 0x0000:
+            switch (opcode & 0xFF)
+            {
+                // 00E0: Clear screen
+                case 0xE0:
+                    for (int i = 0; i < GFX_SIZE; i++)
+                        gfx[i] = 0;
+                    pc += 2;
+                    break;
+                // 00EE: Return from function
+                case 0xEE:
+                    pc = stack[sp];
+                    sp--;
+                    break;
+                default:
+                    printf("Unknown opcode: 0x%X\n", opcode);
+            }
             break;
         // 1NNN: Goto address NNN
         case 0x1000:
@@ -146,23 +162,44 @@ void Chip8::decode()
                     break;
                 // 8XY4: Add V[Y] to V[X] and set carry flag, if any
                 case 0x4:
+                    // Set carry flag
+                    if (V[(opcode & 0xF0) >> 4] > (0xFF - V[(opcode & 0xF00) >> 8]))
+                        V[0xF] = 1;
+                    else
+                        V[0xF] = 0;
                     V[(opcode & 0xF00) >> 8] += V[(opcode & 0xF0) >> 4];
+                    pc += 2;
                     break;
                 // 8XY5: Subtract V[Y] from V[X] and set borrow flag, if any
                 case 0x5:
+                    // Set borrow flag
+                    if (V[(opcode & 0xF00) >> 8] > V[(opcode & 0xF0) >> 4])
+                        V[0xF] = 1;
+                    else
+                        V[0xF] = 0;
+                    V[(opcode & 0xF00) >> 8] -= V[(opcode & 0xF0) >> 4];
+                    pc += 2;
                     break;
                 // 8XY6: Set LSB of V[X] to V[F] and shift V[X] to right by 1
                 case 0x6:
                     V[0xF] = V[(opcode & 0xF00) >> 8] & 0x1; 
                     V[(opcode & 0xF00) >> 8] >>= 1;
+                    pc += 2;
                     break;
                 // 8XY7: Set V[X] to V[Y] - V[X] and set borrow flag, if any
                 case 0x7:
+                    if (V[(opcode & 0xF0) >> 4] > V[(opcode & 0xF00) >> 8])
+                        V[0xF] = 1;
+                    else
+                        V[0xF] = 0;
+                    V[(opcode & 0xF00) >> 8] = V[(opcode & 0xF0) >> 4] - V[(opcode & 0xF00) >> 8];
+                    pc += 2;
                     break;
                 // 8XYE: Set MSB of V[X] to V[F] and shift V[X] to left by 1
                 case 0xE:
                     V[0xF] = (V[(opcode & 0xF00) >> 8] >> 7) & 0x1;
                     V[(opcode & 0xF00) >> 8] <<= 1;
+                    pc += 2;
                     break;
                 default:
                     printf("Unknwon opcode: 0x%X\n", opcode);
@@ -202,7 +239,7 @@ void Chip8::decode()
                     break;
                 // EXA1: If key stored in V[X] is not pressed, skip next instruction
                 case 0xA1:
-                    if (key[V[(opcode & 0xF00) >> 8] == 0]
+                    if (key[V[(opcode & 0xF00) >> 8] == 0])
                             pc += 2;
                     pc += 2;
                     break;
@@ -238,12 +275,26 @@ void Chip8::decode()
                     break;
                 // FX29: Set I to location of sprite for character in V[X]
                 case 0x29:
+
                     break;
+                // FX33: Store BCD representation of V[X] at address I, I + 1, I + 2
                 case 0x33:
+                    memory[I] = V[(opcode & 0xF00) >> 8] / 100;
+                    memory[I + 1] = (V[(opcode & 0xF00) >> 8] / 10) % 10;
+                    memory[I + 2] = (V[(opcode & 0xF00) >> 8] % 100) % 10;
+                    pc += 2;
                     break;
+                // FX55: Store V[0] to V[X] starting at address I (unmodified)
                 case 0x55:
+                    for (int i = 0; i <= ((opcode & 0xF00) >> 8); i++)
+                        memory[I + i] = V[i];
+                    pc += 2;
                     break;
+                // FX65: Fill V[0] to V[X] with values starting from address I (unmodified)
                 case 0x65:
+                    for (int i = 0; i <= ((opcode & 0xF00) >> 8); i++)
+                        V[i] = memory[I + i];
+                    pc += 2;
                     break;
                 default:
                     printf("Unknown opcode: 0x%X\n", opcode);
@@ -254,17 +305,10 @@ void Chip8::decode()
     }
 }
 
-// Execute the instruction
-void Chip8::execute()
-{
-    
-}
-
 void Chip8::emulateCycle()
 {
     fetch();
     decode();
-    execute();
 
     // Update timers
     if (delay_timer > 0)
